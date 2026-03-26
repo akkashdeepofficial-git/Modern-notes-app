@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Diary App</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #5a67d8;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        textarea {
+            height: 80px;
+        }
+
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px 3px;
+            font-weight: bold;
+        }
+
+        .save-btn {
+            background: #48bb78;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #f56565;
+            color: white;
+        }
+
+        .edit-btn {
+            background: #4299e1;
+            color: white;
+        }
+
+        .delete-all-btn {
+            background: #805ad5;
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .note {
+            background: #f7fafc;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+
+        .note h4 {
+            margin: 0;
+            color: #2d3748;
+        }
+
+        .note p {
+            margin: 5px 0;
+        }
+
+        hr {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>📔 Diary App</h1>
+
+    <h3>Add / Update Diary</h3>
+
+    <input type="hidden" id="noteId">
+    <input type="text" id="title" placeholder="Title">
+    <textarea id="content" placeholder="Content"></textarea>
+
+    <button class="save-btn" onclick="saveNote()">💾 Save</button>
+
+    <button class="delete-all-btn" onclick="deleteAllNotes()">🗑 Delete All Notes</button>
+
+    <hr>
+
+    <h3>All Notes</h3>
+
+    <div id="notes"></div>
+
+</div>
+
+<script>
+
+    const API_URL = "http://localhost:8080/notes";
+
+    window.onload = fetchNotes;
+
+    function fetchNotes() {
+        fetch(API_URL)
+            .then(res => res.json())
+            .then(data => {
+                const notesDiv = document.getElementById("notes");
+                notesDiv.innerHTML = "";
+
+                data.forEach(note => {
+                    notesDiv.innerHTML += `
+                        <div class="note">
+                            <h4>${note.title}</h4>
+                            <p>${note.content}</p>
+
+                            <button class="edit-btn"
+                                onclick="editNote(${note.id}, \`${note.title}\`, \`${note.content}\`)">
+                                ✏ Edit
+                            </button>
+
+                            <button class="delete-btn"
+                                onclick="deleteNote(${note.id})">
+                                ❌ Delete
+                            </button>
+                        </div>
+                    `;
+                });
+            });
+    }
+
+    function saveNote() {
+        const id = document.getElementById("noteId").value;
+        const title = document.getElementById("title").value;
+        const content = document.getElementById("content").value;
+
+        const note = { title, content };
+
+        if (id) {
+            fetch(`${API_URL}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(note)
+            }).then(() => {
+                clearForm();
+                fetchNotes();
+            });
+        } else {
+            fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(note)
+            }).then(() => {
+                clearForm();
+                fetchNotes();
+            });
+        }
+    }
+
+    function deleteNote(id) {
+        fetch(`${API_URL}/${id}`, {
+            method: "DELETE"
+        }).then(() => fetchNotes());
+    }
+
+    function deleteAllNotes() {
+        if (!confirm("Delete ALL notes?")) return;
+
+        fetch(API_URL, {
+            method: "DELETE"
+        })
+        .then(res => res.text())
+        .then(msg => {
+            alert(msg);
+            fetchNotes();
+        });
+    }
+
+    function editNote(id, title, content) {
+        document.getElementById("noteId").value = id;
+        document.getElementById("title").value = title;
+        document.getElementById("content").value = content;
+    }
+
+    function clearForm() {
+        document.getElementById("noteId").value = "";
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
+    }
+
+</script>
+
+</body>
+</html>
